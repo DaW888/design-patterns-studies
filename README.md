@@ -27,6 +27,8 @@ classDiagram
     Article <|-- Brand
     Article <|-- Supplier
     Article <|-- Category
+    ArticleBuilder <|-- Article
+
     
     class Article {
         +int id
@@ -39,6 +41,19 @@ classDiagram
         +addToCart()
         +createNew()
         +addToDatabase()
+    }
+    class ArticleBuilder {
+        -int category
+        -double price
+        -int brand
+        -int supplier
+        -Database database
+        +setCategory(int) : ArticleBuilder
+        +setPrice(double) : ArticleBuilder
+        +setBrand(int) : ArticleBuilder
+        +setSupplier(int) : ArticleBuilder
+        +createNewArticle() : Article
+        +addToDatabase() : void
     }
     class Cart {
         +int quantity
@@ -116,6 +131,7 @@ classDiagram
         +int id
         +String name
         +String type
+        +getInstance()
         +Employee data()
         +Position data()
         +Payment data()
