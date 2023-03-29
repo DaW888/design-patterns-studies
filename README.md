@@ -1,6 +1,6 @@
 # design-patterns-studies
 
-## Example diagram
+## Main diagram without patterns
 
 ```mermaid
 ---
@@ -8,138 +8,101 @@ title: Web Store
 ---
 
 classDiagram
-    
-    Database <|-- Order
-    Database <|-- Cart
-    Database <|-- Payment
-    Database <|-- Delivery
-    Database <|-- Supplier 
-    Database <|-- Article 
-    Database <|-- Brand 
-    Database <|-- Category 
-    Database <|-- Employee 
-    Database <|-- Position
-    Order <|-- Delivery
-    Order <|-- Cart
-    Order <|-- Payment
-    Employee <|-- Position
-    Cart <|-- Article
-    Article <|-- Brand
-    Article <|-- Supplier
-    Article <|-- Category
-    ArticleBuilder <|-- Article
-
-    
-    class Article {
-        +int id
-        +int category
-        +double price
-        +int brand
-        +int supplier
-        +getData()
-        +multiplyPrice()
-        +addToCart()
-        +createNew()
-        +addToDatabase()
+    class Customer {
+        +Int customerID
+        +String email
+        +String password
+        +register() Void
+        +login() Void
+        +placeOrder() Order
     }
-    class ArticleBuilder {
-        -int category
-        -double price
-        -int brand
-        -int supplier
-        -Database database
-        +setCategory(int) : ArticleBuilder
-        +setPrice(double) : ArticleBuilder
-        +setBrand(int) : ArticleBuilder
-        +setSupplier(int) : ArticleBuilder
-        +createNewArticle() : Article
-        +addToDatabase() : void
-    }
-    class Cart {
-        +int quantity
-        +getData()
-        +sumPrice()
-        +createOrder()
+    class ShoppingCart {
+        +List~ShoppingCartItem~ items
+        +addItem(Item item) void
+        +removeItem(Item item) void
+        +calculateTotal() Float
     }
     class Order {
-        +int id
-        +double orderPrice
-        +getData()
-        +requestPayment()
-        +paymentValidation()
-        +requestDelivery()
-        +addToDatabase()
+        +Int orderID
+        +Customer customer
+        +Address shippingAddress
+        +PaymentMethod paymentMethod
+        +List~Item~ items
+        +create() void
+        +cancel() Void
     }
-    class Supplier {
-        +int id
-        +double supplyCost
+    class Item {
+        +Int itemID
         +String name
-        +createNew()
-        +addToDatabase()
+        +String description
+        +Float price
     }
-    class Brand {
-        +int id
-        +String name
-        +int priceMultiplier
-        +createNew()
-        +addToDatabase()
+    class ShoppingCartItem {
+        +Item item
+        +Int quantity
+    }
+    class Address {
+        +String street
+        +String city
+        +String state
+        +String postalCode
+        +String country
+    }
+    class PaymentMethod {
+        <<interface>>
+        +pay(Float amount) Boolean
+    }
+    class CreditCardPayment~PaymentMethod~ {
+        +String cardNumber
+        +Date expirationDate
+        +Int cvv
+    }
+    class PayPalPayment~PaymentMethod~ {
+        +String email
+        +String password
+    }
+    class Review {
+        +Int reviewID
+        +Customer customer
+        +Item item
+        +String title
+        +String content
+        +Int rating
+        +Date datePosted
     }
     class Category {
-        +int id
+        +Int categoryID
         +String name
-        +createNew()
-        +addToDatabase()
+        +String description
+        +List~Item~ items
     }
-    class Payment {
-        +int id
-        +string type
-        +bool success
-        +validData()
-        +sendRequest()
-        +createNew()
-        +addToDatabase()
-    }
-    class Delivery {
-        +int id
-        +String type
-        +double price
-        +String name
-        +createRequest()
-        +createNew()
-        +addToDatabase()
-    }
-    class Employee {
-        +int id
-        +int position
-        +float hireDate
-        +double salary
-        +String name
-        +String surname
-        +string address
-        +getData()
-        +isEmployeeOfTheMonth()
-        +createNew()
-        +addToDatabase()
-    }
-    class Position {
-        +int id
-        +String name
-        +double baseSalary
-        +addToDatabase()
-    }
-    class Database {
-        +int id
-        +String name
-        +String type
-        +getInstance()
-        +Employee data()
-        +Position data()
-        +Payment data()
-        +Delivery data()
-        +Article data()
-        +Supplier data()
-        +Order data()
-        +Category data()
-        +Brand data()
-    }
+
+    CreditCardPayment --|> PaymentMethod
+    PayPalPayment --|> PaymentMethod
+
+%%    Customer "1" --> "1" ShoppingCart
+%%    Customer "1" --> "*" Order
+%%    Customer "1" --> "*" Review
+%%    ShoppingCart "1" --> "1..*" ShoppingCartItem
+%%    ShoppingCartItem "1" --> "1" Item
+%%    Order "1" --> "1" Customer
+%%    Order "1" --> "1" Address
+%%    Order "1" --> "1" PaymentMethod
+%%    Order "1" --> "1..*" Item
+%%    Item "1" --> "*" Review
+%%    Item "1" --> "1" Category
+%%    Category "1" --> "1..*" Item
+
+    Customer "1" --* "1" ShoppingCart
+    Customer "1" --o "*" Order
+    Customer "1" --o "*" Review
+    ShoppingCart "1" --* "1..*" ShoppingCartItem
+    ShoppingCartItem "1" --o "1" Item
+    Order "1" --> "1" Customer
+    Order "1" --* "1" Address
+    Order "1" --* "1" PaymentMethod
+    Order "1" --o "1..*" Item
+    Item "1" --o "*" Review
+    Item "1" --> "1" Category
+    Category "1" --o "1..*" Item
 ```
