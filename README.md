@@ -2,6 +2,8 @@
 
 ## Main diagram without patterns
 
+### Class diagram
+
 ```mermaid
 ---
 title: Web Store
@@ -80,19 +82,6 @@ classDiagram
     CreditCardPayment --|> PaymentMethod
     PayPalPayment --|> PaymentMethod
 
-%%    Customer "1" --> "1" ShoppingCart
-%%    Customer "1" --> "*" Order
-%%    Customer "1" --> "*" Review
-%%    ShoppingCart "1" --> "1..*" ShoppingCartItem
-%%    ShoppingCartItem "1" --> "1" Item
-%%    Order "1" --> "1" Customer
-%%    Order "1" --> "1" Address
-%%    Order "1" --> "1" PaymentMethod
-%%    Order "1" --> "1..*" Item
-%%    Item "1" --> "*" Review
-%%    Item "1" --> "1" Category
-%%    Category "1" --> "1..*" Item
-
     Customer "1" --* "1" ShoppingCart
     Customer "1" --o "*" Order
     Customer "1" --o "*" Review
@@ -105,4 +94,72 @@ classDiagram
     Item "1" --o "*" Review
     Item "1" --> "1" Category
     Category "1" --o "1..*" Item
+    
+    
+%%    Customer "1" --> "1" ShoppingCart
+%%    Customer "1" --> "*" Order
+%%    Customer "1" --> "*" Review
+%%    ShoppingCart "1" --> "1..*" ShoppingCartItem
+%%    ShoppingCartItem "1" --> "1" Item
+%%    Order "1" --> "1" Customer
+%%    Order "1" --> "1" Address
+%%    Order "1" --> "1" PaymentMethod
+%%    Order "1" --> "1..*" Item
+%%    Item "1" --> "*" Review
+%%    Item "1" --> "1" Category
+%%    Category "1" --> "1..*" Item
+```
+
+### Sequence diagram
+
+```mermaid
+sequenceDiagram
+    actor Customer
+    participant ShoppingCart
+    participant ShoppingCartItem
+    participant Item
+    participant Order
+    participant Address
+    participant PaymentMethod
+    participant CreditCardPayment
+    participant PayPalPayment
+    participant Review
+    participant Category
+
+    Note over Customer, Item: Add Items to Cart
+    loop Add items to cart
+        Customer->>ShoppingCart: addItem(Item)
+        activate ShoppingCart
+        ShoppingCart->>ShoppingCartItem: create ShoppingCartItem with Item details
+        ShoppingCart->>Item: reference Item
+        ShoppingCart->>ShoppingCartItem: set quantity
+        ShoppingCart->>Customer: update total price
+        deactivate ShoppingCart
+    end
+
+    Note over Customer, Order: Place Order
+    Customer->>Order: placeOrder()
+    activate Order
+    Order->>ShoppingCart: get items and total price
+    Order->>Customer: get customer details
+    Order->>Address: create Address
+    Order->>PaymentMethod: select payment method
+    alt Credit Card
+        PaymentMethod->>CreditCardPayment: pay(amount)
+    else PayPal
+        PaymentMethod->>PayPalPayment: pay(amount)
+    end
+    PaymentMethod->>Order: confirm payment
+    Order->>Item: add items to order
+    Item->>Category: assign item to category
+    deactivate Order
+
+    Note over Customer, Review: Add Review
+    loop Add review
+        Customer->>Review: write review
+        activate Review
+        Review->>Customer: get customer details
+        Review->>Item: add review to item
+        deactivate Review
+    end
 ```
