@@ -254,7 +254,6 @@ classDiagram
 
 ### Sequence diagram
 
-
 Na tym diagramie sekwencji przedstawiono proces zakupu w systemie sklepu internetowego. Diagram ilustruje następujące etapy:
 1. Dodawanie przedmiotów do koszyka
    - Klient (`Customer`) dodaje przedmioty (`Item`) do koszyka (`ShoppingCart`).
@@ -334,3 +333,136 @@ sequenceDiagram
         deactivate Review
     end
 ```
+
+## Abstract Factory Pattern
+Wzorzec **Fabryki Abstrakcyjnej** warto zastosować w tym przypadku, ze względu na obecność różnych typów płatności: `CreditCardPayment` oraz `PayPalPayment`. 
+Wzorzec ten pozwala na odseparowanie tworzenia obiektów płatności od głównych klas, takich jak `Customer` czy `Order`.
+
+Główne zalety użycia wzorca **Fabryki Abstrakcyjnej** w tym kontekście to:
+
+1. **Łatwe rozszerzanie**: 
+Jeśli pojawią się nowe metody płatności, wystarczy dodać nową klasę fabryki, która będzie implementować interfejs `PaymentMethodFactory`. Nie będzie konieczne modyfikowanie istniejącego kodu, co zwiększa elastyczność systemu i ułatwia jego rozwijanie.
+2. **Oddzielenie logiki tworzenia obiektów**
+Wzorzec **Fabryki Abstrakcyjnej** pozwala na przeniesienie logiki tworzenia obiektów płatności do dedykowanych klas fabryk. Dzięki temu klasa `Order` może skupić się na swojej głównej funkcji, czyli zarządzaniu zamówieniem, a nie na tworzeniu obiektów płatności.
+3. **Ułatwione testowanie**
+Dzięki temu, że tworzenie obiektów płatności jest odseparowane od pozostałych klas, łatwiej będzie napisać testy jednostkowe sprawdzające różne metody płatności. Można wtedy łatwo podmienić konkretne implementacje fabryk na ich testowe wersje (np. z użyciem mocków), co pozwala na kontrolowanie zachowań w trakcie testowania.
+4. **Łatwość konfiguracji**
+Wykorzystując wzorzec Fabryki Abstrakcyjnej, łatwo można zmienić metodę płatności używaną przez system, podmieniając tylko odpowiednią klasę fabryki. Dzięki temu system staje się bardziej elastyczny i łatwy w konfiguracji.
+
+
+
+### Class diagram
+
+```mermaid
+classDiagram
+    class Order {
+        +Int orderID
+        +Customer customer
+        +Address shippingAddress
+        +PaymentMethod paymentMethod
+        +List~Item~ items
+        +create() void
+        +cancel() Void
+    }
+
+    class PaymentMethod {
+        <<interface>>
+        +pay(Float amount) Boolean
+    }
+    class CreditCardPayment~PaymentMethod~ {
+        +String cardNumber
+        +Date expirationDate
+        +Int cvv
+    }
+    class PayPalPayment~PaymentMethod~ {
+        +String email
+        +String password
+    }
+
+    class PaymentMethodFactory {
+        <<abstract>>
+        +createPaymentMethod() PaymentMethod
+    }
+    class CreditCardPaymentFactory {
+        +createPaymentMethod() CreditCardPayment
+    }
+    class PayPalPaymentFactory {
+        +createPaymentMethod() PayPalPayment
+    }
+
+    CreditCardPayment --|> PaymentMethod
+    PayPalPayment --|> PaymentMethod
+    CreditCardPaymentFactory --|> PaymentMethodFactory : inherits
+    PayPalPaymentFactory --|> PaymentMethodFactory : inherits
+    Order "1" --* "1" PaymentMethod
+    Order "1" --* "1" PaymentMethodFactory
+    CreditCardPaymentFactory ..> CreditCardPayment : creates
+    PayPalPaymentFactory ..> PayPalPayment : creates
+```
+
+### Sequence diagram
+
+
+
+```mermaid
+sequenceDiagram
+   actor Customer
+   participant ShoppingCart
+   participant ShoppingCartItem
+   participant Item
+   participant Order
+   participant Address
+   participant PaymentMethodFactory
+   participant PaymentMethod
+   participant CreditCardPayment
+   participant PayPalPayment
+   participant Review
+   participant Category
+   Note over Customer, Item: Add Items to Cart
+   loop Add items to cart
+      Customer->>ShoppingCart: addItem(Item)
+      activate ShoppingCart
+      ShoppingCart->>ShoppingCartItem: create ShoppingCartItem with Item details
+      ShoppingCart->>Item: reference Item
+      ShoppingCart->>ShoppingCartItem: set quantity
+      ShoppingCart->>Customer: update total price
+      deactivate ShoppingCart
+   end
+
+   Note over Customer, Order: Place Order
+   Customer->>Order: placeOrder()
+   activate Order
+   Order->>ShoppingCart: get items and total price
+   Order->>Customer: get customer details
+   Order->>Address: create Address
+   Order->>PaymentMethodFactory: createPaymentMethod()
+   activate PaymentMethodFactory
+   alt Credit Card
+      PaymentMethodFactory->>CreditCardPayment: create()
+      PaymentMethodFactory->>Order: return CreditCardPayment
+   else PayPal
+      PaymentMethodFactory->>PayPalPayment: create()
+      PaymentMethodFactory->>Order: return PayPalPayment
+   end
+   deactivate PaymentMethodFactory
+   Order->>PaymentMethod: pay(amount)
+   alt Credit Card
+      PaymentMethod->>CreditCardPayment: process payment
+   else PayPal
+      PaymentMethod->>PayPalPayment: process payment
+   end
+   PaymentMethod->>Order: confirm payment
+   Order->>Item: add items to order
+   Item->>Category: assign item to category
+   deactivate Order
+
+   Note over Customer, Review: Add Review
+   loop Add review
+      Customer->>Review: write review
+      activate Review
+      Review->>Customer: get customer details
+      Review->>Item: add review to item
+      deactivate Review
+   end
+```
+
