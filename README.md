@@ -169,6 +169,10 @@ W kontekście tego diagramu, warto zastosować wzorzec **Builder** w klasie `Ord
 Implementacja Builder'a w klasie Order pozwoli na elastyczne tworzenie zamówień z różnymi kombinacjami atrybutów, jednocześnie utrzymując kod czytelnym i łatwym w utrzymaniu.
 
 
+### Class diagram
+
+> Wyłącznie modyfikowana część (nie cały diagram)
+
 ```mermaid
 classDiagram
     class Customer {
@@ -246,4 +250,65 @@ classDiagram
     OrderBuilder o-- "1" Address : uses
     OrderBuilder o-- "1" PaymentMethod : uses
     OrderBuilder o-- "1..*" Item : uses
+```
+
+### Sequence diagram
+
+```mermaid
+sequenceDiagram
+    actor Customer
+    participant ShoppingCart
+    participant ShoppingCartItem
+    participant Item
+    participant OBuilder as OrderBuilder
+    participant Order
+    participant Address
+    participant PaymentMethod
+    participant CreditCardPayment
+    participant PayPalPayment
+    participant Review
+    participant Category
+
+    Note over Customer, Item: Add Items to Cart
+    loop Add items to cart
+        Customer->>ShoppingCart: addItem(Item)
+        activate ShoppingCart
+        ShoppingCart->>ShoppingCartItem: create ShoppingCartItem with Item details
+        ShoppingCart->>Item: reference Item
+        ShoppingCart->>ShoppingCartItem: set quantity
+        ShoppingCart->>Customer: update total price
+        deactivate ShoppingCart
+    end
+
+    Note over Customer, Order: Place Order
+    Customer->>OBuilder: setCustomer(Customer)
+    Customer->>OBuilder: setShippingAddress(Address)
+    Customer->>OBuilder: setPaymentMethod(PaymentMethod)
+    loop Add items
+        Customer->>OBuilder: addItem(Item)
+    end
+    Customer->>OBuilder: build()
+    OBuilder->>Order: create Order
+    OBuilder->>Customer: return Order
+    Customer->>Order: create()
+    activate Order
+    Order->>PaymentMethod: pay(amount)
+    alt Credit Card
+        PaymentMethod->>CreditCardPayment: process payment
+    else PayPal
+        PaymentMethod->>PayPalPayment: process payment
+    end
+    PaymentMethod->>Order: confirm payment
+    Order->>Item: add items to order
+    Item->>Category: assign item to category
+    deactivate Order
+
+    Note over Customer, Review: Add Review
+    loop Add review
+        Customer->>Review: write review
+        activate Review
+        Review->>Customer: get customer details
+        Review->>Item: add review to item
+        deactivate Review
+    end
 ```
