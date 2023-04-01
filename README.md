@@ -254,6 +254,28 @@ classDiagram
 
 ### Sequence diagram
 
+
+Na tym diagramie sekwencji przedstawiono proces zakupu w systemie sklepu internetowego. Diagram ilustruje następujące etapy:
+1. Dodawanie przedmiotów do koszyka
+   - Klient (`Customer`) dodaje przedmioty (`Item`) do koszyka (`ShoppingCart`).
+   - Koszyk tworzy obiekt `ShoppingCartItem` z informacjami o dodanym przedmiocie oraz jego ilości.
+   - Koszyk aktualizuje łączną cenę i przekazuje ją do klienta.
+2. Składanie zamówienia:
+   - Klient korzysta z `OrderBuilder` (`OBuilder`) do ustawienia informacji o sobie, adresie wysyłki oraz metodzie płatności.
+   - W pętli, klient dodaje wszystkie przedmioty z koszyka do OrderBuilder.
+   - Następnie klient wywołuje metodę `build()` na `OBuilder`, który tworzy nowe zamówienie (`Order`) i zwraca je do klienta.
+   - Klient wywołuje metodę create() na obiekcie `Order`, który następnie korzysta z metody `pay()` na wybranej metodzie płatności (`PaymentMethod`).
+   - Diagram pokazuje dwie możliwe metody płatności: kartą kredytową (`CreditCardPayment`) lub PayPal (`PayPalPayment`).
+   - Po potwierdzeniu płatności, przedmioty są dodawane do zamówienia, a także przypisywane do odpowiednich kategorii (`Category`).
+3. Dodawanie recenzji:
+   - W pętli, klient dodaje recenzje (`Review`) do przedmiotów.
+   - Recenzja zawiera informacje o kliencie, treść oraz ocenę
+   - Recenzja jest dodawana do odpowiedniego przedmiotu (`Item`)
+
+
+Diagram sekwencji ilustruje interakcje pomiędzy klientem, koszykiem, zamówieniem, przedmiotami, metodami płatności, recenzjami oraz kategoriami w trakcie całego procesu zakupu w sklepie internetowym.
+
+
 ```mermaid
 sequenceDiagram
     actor Customer
