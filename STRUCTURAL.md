@@ -169,3 +169,129 @@ sequenceDiagram
         deactivate Review
     end
 ```
+
+## Proxy Pattern
+
+Wzorzec Proxy jest szczególnie przydatny, gdy chcemy kontrolować dostęp do oryginalnego obiektu oraz wykonywać dodatkowe operacje przed lub po przekazaniu wywołania do tego obiektu. 
+W przypadku klasy PaymentMethod oraz jej implementacji (CreditCardPayment i PayPalPayment), zastosowanie wzorca Proxy może przynieść następujące korzyści:
+1. **Logowanie informacji o płatnościach**: Wzorzec Proxy pozwala na rejestrowanie informacji o płatnościach, takich jak czas wykonania, status transakcji itp. 
+Możemy zaimplementować logowanie w klasie PaymentMethodProxy, co pozwoli na rejestrację tych informacji dla wszystkich rodzajów płatności, niezależnie od ich konkretnej implementacji.
+2. **Sprawdzanie uprawnień klienta**: Przed wykonaniem płatności, możemy sprawdzić, czy klient ma wystarczające środki na koncie lub czy jego dane do płatności są poprawne. 
+Wzorzec Proxy pozwala na dodanie takich kontroli w jednym miejscu, bez zmiany oryginalnych klas płatności, takich jak CreditCardPayment i PayPalPayment.
+3. **Zmiana implementacji płatności**: Wzorzec Proxy ułatwia również wprowadzenie zmian w implementacji płatności, na przykład dodanie nowych metod płatności, bez wpływu na pozostałe części systemu. 
+Ponieważ klasa Order korzysta z interfejsu PaymentMethod, możemy łatwo dodać nową implementację płatności i połączyć ją z klasą PaymentMethodProxy.
+4. **Ochrona wrażliwych danych**: Wzorzec Proxy może pomóc w ochronie wrażliwych danych klientów, takich jak numer karty kredytowej, poprzez dodanie warstwy bezpieczeństwa. 
+Na przykład, klasa PaymentMethodProxy może szyfrować dane klienta przed przekazaniem ich do oryginalnego obiektu płatności oraz deszyfrować je po otrzymaniu odpowiedzi.
+
+Podsumowując, zastosowanie wzorca Proxy dla klasy PaymentMethod pozwala na kontrolowanie dostępu do oryginalnego obiektu płatności, dodanie logowania, sprawdzanie uprawnień klienta, zmianę implementacji płatności oraz ochronę wrażliwych danych. 
+Wszystko to przyczynia się do zwiększenia elastyczności i bezpieczeństwa systemu.
+
+
+### Class Diagram
+
+```mermaid
+classDiagram
+    class Order {
+        +Int orderID
+        +Customer customer
+        +Address shippingAddress
+        +PaymentMethodProxy paymentMethod
+        +List~Item~ items
+        +create() void
+        +cancel() Void
+    }
+
+    class PaymentMethod {
+        <<interface>>
+        +pay(Float amount) Boolean
+    }
+    class PaymentMethodProxy~PaymentMethod~ {
+        -PaymentMethod realPaymentMethod
+        -encryptData() void
+        -decryptData() void
+    }
+    class CreditCardPayment~PaymentMethod~ {
+        +String cardNumber
+        +Date expirationDate
+        +Int cvv
+    }
+    class PayPalPayment~PaymentMethod~ {
+        +String email
+        +String password
+    }
+
+    CreditCardPayment --|> PaymentMethod
+    PayPalPayment --|> PaymentMethod
+    PaymentMethodProxy --|> PaymentMethod
+    PaymentMethod "1" --* "1" PaymentMethodProxy
+
+    Order "1" --* "1" PaymentMethodProxy
+```
+
+### Sequence Diagram
+
+W diagramie sekwencji wprowadziliśmy następujące zmiany:
+1. Zamiast korzystać bezpośrednio z obiektów `PaymentMethod` (takich jak `CreditCardPayment` i `PayPalPayment`), teraz używamy obiektów `PaymentMethodProxy`. 
+Pozwala to na dodanie dodatkowej warstwy bezpieczeństwa, takiej jak szyfrowanie i deszyfrowanie danych, podczas przeprowadzania płatności.
+2. W momencie wyboru metody płatności w klasie Order, tworzymy instancję klasy `PaymentMethodProxy` zamiast bezpośrednio tworzyć instancje `CreditCardPayment` lub `PayPalPayment`.
+3. Przed przekazaniem płatności do rzeczywistego obiektu `PaymentMethod`, klasa `PaymentMethodProxy` szyfruje dane, a po zakończeniu płatności deszyfruje je. 
+To dodaje dodatkową warstwę bezpieczeństwa do procesu płatności.
+
+Wprowadzenie wzorca Proxy do diagramu sekwencji pozwala na lepsze zarządzanie bezpieczeństwem płatności, bez konieczności modyfikowania istniejących klas. 
+To daje większą elastyczność i łatwiejsze utrzymanie kodu w przyszłości.
+
+```mermaid
+sequenceDiagram
+    actor Customer
+    participant ShoppingCart
+    participant ShoppingCartItem
+    participant Item
+    participant Order
+    participant Address
+    participant PaymentMethodProxy
+    participant PaymentMethod
+    participant CreditCardPayment
+    participant PayPalPayment
+    participant Review
+    participant Category
+
+    Note over Customer, Item: Add Items to Cart
+    loop Add items to cart
+        Customer->>ShoppingCart: addItem(Item)
+        activate ShoppingCart
+        ShoppingCart->>ShoppingCartItem: create ShoppingCartItem with Item details
+        ShoppingCart->>Item: reference Item
+        ShoppingCart->>ShoppingCartItem: set quantity
+        ShoppingCart->>Customer: update total price
+        deactivate ShoppingCart
+    end
+
+    Note over Customer, Order: Place Order
+    Customer->>Order: placeOrder()
+    activate Order
+    Order->>ShoppingCart: get items and total price
+    Order->>Customer: get customer details
+    Order->>Address: create Address
+    Order->>PaymentMethodProxy: select payment method
+    alt Credit Card
+        PaymentMethodProxy->>CreditCardPayment: create realPaymentMethod
+    else PayPal
+        PaymentMethodProxy->>PayPalPayment: create realPaymentMethod
+    end
+    PaymentMethodProxy->>PaymentMethodProxy: encryptData()
+    PaymentMethodProxy->>PaymentMethod: pay(amount)
+    PaymentMethodProxy->>PaymentMethodProxy: decryptData()
+    PaymentMethodProxy->>Order: confirm payment
+    Order->>Item: add items to order
+    Item->>Category: assign item to category
+    deactivate Order
+
+    Note over Customer, Review: Add Review
+    loop Add review
+        Customer->>Review: write review
+        activate Review
+        Review->>Customer: get customer details
+        Review->>Item: add review to item
+        deactivate Review
+    end
+```
