@@ -111,12 +111,14 @@ sequenceDiagram
     PaymentMethod->>Order: confirm payment
     Order->>Item: add items to order
     Item->>Category: assign item to category
+    Order->>Customer: attach(Customer)
     Order->>Order: notify()
     activate Order
     loop For each Customer
         Order->>Customer: update()
     end
     deactivate Order
+    Order->>Customer: detach(Customer)
 
     Note over Customer, Review: Add Review
     loop Add review
