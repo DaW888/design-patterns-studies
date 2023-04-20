@@ -131,3 +131,142 @@ sequenceDiagram
 
 ## Chain of Responsibility
 
+Wzorzec Chain of Responsibility (łańcuch odpowiedzialności) może być użyty w naszym diagramie klas, aby zdecentralizować logikę obsługi uprawnień związanych z anulowaniem zamówienia przez klienta. 
+Zamiast umieszczać całą logikę sprawdzania uprawnień w jednej klasie, ten wzorzec pozwala na utworzenie łańcucha obiektów obsługujących uprawnienia. 
+Każdy obiekt w łańcuchu odpowiada za sprawdzenie uprawnień na swoim poziomie i przekazanie sprawdzenia dalej, jeśli nie jest w stanie udzielić odpowiedniej decyzji.
+
+W naszym diagramie klas, klient może mieć różne poziomy uprawnień, 
+np. podstawowe, premium i admin. W związku z tym, możemy utworzyć trzy różne klasy obsługujące te poziomy uprawnień: `BasicPermissionHandler`, `PremiumPermissionHandler` i `AdminPermissionHandler`. 
+Każda z tych klas implementuje interfejs `PermissionHandler`, który definiuje wspólne metody do ustawienia następnego obiektu w łańcuchu (`setNextHandler`) i obsługi uprawnień (`handlePermission`).
+
+W przypadku anulowania zamówienia przez klienta, łańcuch odpowiedzialności rozpoczyna się od `BasicPermissionHandler`, 
+który sprawdza, czy klient ma podstawowe uprawnienia do anulowania zamówienia. Jeśli nie jest w stanie udzielić odpowiedniej decyzji, 
+przekazuje sprawdzenie dalej do `PremiumPermissionHandler`, który z kolei sprawdza uprawnienia na poziomie premium. Jeśli również nie jest w stanie udzielić odpowiedniej decyzji, przekazuje sprawdzenie do `AdminPermissionHandler`, 
+który sprawdza uprawnienia na poziomie administratora. Proces ten kontynuowany jest, aż jeden z obiektów obsługujących uprawnienia podejmie decyzję lub do momentu, gdy cały łańcuch zostanie sprawdzony.
+
+
+Korzystając z tego wzorca w naszym diagramie klas, możemy łatwo rozszerzać i modyfikować logikę sprawdzania uprawnień bez ingerowania w inne klasy, takie jak `Customer` czy `Order`. 
+Wzorzec ten wprowadza elastyczność i łatwość zarządzania, gdy potrzebujemy wprowadzić zmiany w systemie uprawnień.
+
+
+### Class diagram
+
+```mermaid
+classDiagram
+    class Customer {
+        +Int customerID
+        +String email
+        +String password
+        +register() Void
+        +login() Void
+        +placeOrder() Order
+        +canCancelOrder() Boolean
+    }
+
+    class Order {
+        +Int orderID
+        +Customer customer
+        +Address shippingAddress
+        +PaymentMethod paymentMethod
+        +List~Item~ items
+        +create() void
+        +cancel() Void
+    }
+
+    class PermissionHandler {
+        <<interface>>
+        +setNextHandler(PermissionHandler nextHandler) void
+        +handlePermission(Customer customer) Boolean
+    }
+    class BasicPermissionHandler~PermissionHandler~ 
+    class PremiumPermissionHandler~PermissionHandler~ 
+    class AdminPermissionHandler~PermissionHandler~
+
+    BasicPermissionHandler --|> PermissionHandler
+    PremiumPermissionHandler --|> PermissionHandler
+    AdminPermissionHandler --|> PermissionHandler
+    BasicPermissionHandler "1" --> "0..1" PremiumPermissionHandler : nextHandler
+    PremiumPermissionHandler "1" --> "0..1" AdminPermissionHandler : nextHandler
+
+    Customer "1" --o "*" Order
+    Order "1" --> "1" Customer
+    Customer "1" --> "1" BasicPermissionHandler : checkPermission
+```
+
+### Sequence diagram
+
+```mermaid
+sequenceDiagram
+    actor Customer
+    participant ShoppingCart
+    participant ShoppingCartItem
+    participant Item
+    participant Order
+    participant Address
+    participant PaymentMethod
+    participant CreditCardPayment
+    participant PayPalPayment
+    participant Review
+    participant Category
+    participant PermissionHandler
+    participant BasicPermissionHandler
+    participant PremiumPermissionHandler
+    participant AdminPermissionHandler
+
+    Note over Customer, Item: Add Items to Cart
+    loop Add items to cart
+        Customer->>ShoppingCart: addItem(Item)
+        activate ShoppingCart
+        ShoppingCart->>ShoppingCartItem: create ShoppingCartItem with Item details
+        ShoppingCart->>Item: reference Item
+        ShoppingCart->>ShoppingCartItem: set quantity
+        ShoppingCart->>Customer: update total price
+        deactivate ShoppingCart
+    end
+
+    Note over Customer, Order: Place Order
+    Customer->>Order: placeOrder()
+    activate Order
+    Order->>ShoppingCart: get items and total price
+    Order->>Customer: get customer details
+    Order->>Address: create Address
+    Order->>PaymentMethod: select payment method
+    alt Credit Card
+        PaymentMethod->>CreditCardPayment: pay(amount)
+    else PayPal
+        PaymentMethod->>PayPalPayment: pay(amount)
+    end
+    PaymentMethod->>Order: confirm payment
+    Order->>Item: add items to order
+    Item->>Category: assign item to category
+    deactivate Order
+
+    Note over Customer, Review: Add Review
+    loop Add review
+        Customer->>Review: write review
+        activate Review
+        Review->>Customer: get customer details
+        Review->>Item: add review to item
+        deactivate Review
+    end
+
+    Note over Customer, PermissionHandler: Check Permission to Cancel Order
+    Customer->>BasicPermissionHandler: canCancelOrder()
+    activate BasicPermissionHandler
+    alt BasicPermissionHandler can handle
+        BasicPermissionHandler->>Customer: return permission result
+        deactivate BasicPermissionHandler
+    else BasicPermissionHandler can't handle
+        BasicPermissionHandler->>PremiumPermissionHandler: handlePermission(Customer)
+        activate PremiumPermissionHandler
+        alt PremiumPermissionHandler can handle
+            PremiumPermissionHandler->>Customer: return permission result
+            deactivate PremiumPermissionHandler
+        else PremiumPermissionHandler can't handle
+            PremiumPermissionHandler->>AdminPermissionHandler: handlePermission(Customer)
+            activate AdminPermissionHandler
+            AdminPermissionHandler->>Customer: return permission result
+            deactivate AdminPermissionHandler
+        end
+    end
+```
