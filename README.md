@@ -5,6 +5,7 @@
  - [Creational Patterns](./CREATIONAL.md) 
  - [Structural Patterns](./STRUCTURAL.md)
  - [Behavioral Patterns](./BEHAVIORAL.md)
+ - [Principles](./PRINCIPLES.md)
 
 
 ## Main diagram without patterns
